@@ -9,6 +9,13 @@
 #include "TinyQueue.h"
 #include "Types.h"
 
+enum class GameState {
+  Start,
+  Running,
+  Paused,
+  Gameover,
+};
+
 class Tetris {
   friend struct std::formatter<Tetris>;
 
@@ -70,6 +77,8 @@ private:
   constexpr inline void ShiftRight() noexcept { m_active_tetronimo.pos.x += 1; }
   constexpr void        WriteTetronimo() noexcept;
   constexpr bool        TryRotate() noexcept;
+  constexpr void        Reset() noexcept;
+  constexpr void        RemoveFilledRows() noexcept;
 
   inline i32 RandomInt(i32 min, i32 max) {
     return std::uniform_int_distribution<i32>{min, max}(m_rng);

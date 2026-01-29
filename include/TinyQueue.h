@@ -1,7 +1,5 @@
 #pragma once
 
-#include <array>
-
 #include "Types.h"
 
 template <typename T, usize SIZE>
@@ -35,8 +33,10 @@ public:
     return val;
   }
 
+  inline Array<T, SIZE> const& GetElementBuffer() const noexcept { return m_buffer; }
+
 private:
-  std::array<T, SIZE> m_buffer;
+  Array<T, SIZE> m_buffer;
 
   usize m_size;
   usize m_r;

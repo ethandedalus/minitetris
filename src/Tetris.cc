@@ -2,6 +2,8 @@
 
 #include <raylib.h>
 
+#include <algorithm>
+
 #include "DesignSystem.h"
 
 using namespace std::chrono_literals;
@@ -162,6 +164,8 @@ void Tetris::Update() noexcept {
     m_active_tetronimo = m_piece_buffer.Dequeue().value();
     m_piece_buffer.Enqueue(RandomTetronimo());
   }
+
+  RemoveFilledRows();
 }
 
 void Tetris::Run() noexcept {
@@ -199,4 +203,29 @@ constexpr bool Tetris::Fits(Position const& pos, usize rotation) const noexcept 
     }
   }
   return true;
+}
+
+constexpr void Tetris::Reset() noexcept {
+  std::fill(m_grid.begin(), m_grid.end(), CELL_EMPTY);
+}
+
+constexpr void Tetris::RemoveFilledRows() noexcept {
+  for (usize i = ROWS; i-- > 0;) {
+    bool filled = std::all_of(
+        m_grid.begin() + i * COLS,
+        m_grid.begin() + (i + 1) * COLS,
+        [](auto x) { return x != CELL_EMPTY; });
+
+    if (filled) {
+      for (usize j = i; j > 0; j--) {
+        std::copy(
+            m_grid.begin() + (j - 1) * COLS,
+            m_grid.begin() + j * COLS,
+            m_grid.begin() + j * COLS);
+      }
+      std::fill(m_grid.begin(), m_grid.begin() + COLS, CELL_EMPTY);
+
+      i++;
+    }
+  }
 }
