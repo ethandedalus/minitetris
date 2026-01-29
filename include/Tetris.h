@@ -13,7 +13,7 @@ enum class GameState {
   Start,
   Running,
   Paused,
-  Gameover,
+  GameOver,
 };
 
 class Tetris {
@@ -22,11 +22,6 @@ class Tetris {
 public:
   struct Config {
     usize start_w, start_h;
-  };
-
-  struct DrawSettings {
-    Position origin;
-    usize    unit;
   };
 
   Tetris(Config const& config) noexcept;
@@ -48,12 +43,15 @@ private:
   }};
 
   void Draw() noexcept;
+
+  void DrawStartOverlay() noexcept;
+  void DrawGameOverOverlay() noexcept;
+  void DrawPausedOverlay() noexcept;
+
   void Update() noexcept;
 
-  constexpr Position     GetOrigin() const noexcept;
-  constexpr usize        GetUnitSize() const noexcept;
-  constexpr DrawSettings MakeDrawSettings() const noexcept;
-  constexpr void         RefreshDrawSettings() const noexcept;
+  constexpr Position GetOrigin() const noexcept;
+  constexpr usize    GetUnitSize() const noexcept;
 
   constexpr CellType& operator[](usize i, usize j) noexcept {
     usize index = COLS * i + j;
@@ -96,6 +94,7 @@ private:
   std::mt19937                 m_rng{std::random_device{}()};
   Config                       m_config;
   Timing                       m_timing;
+  GameState                    m_game_state;
 };
 
 template <>

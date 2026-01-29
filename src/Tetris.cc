@@ -14,7 +14,8 @@ Tetris::Tetris(Config const& config) noexcept
           RandomTetronimo(),
           RandomTetronimo(),
           RandomTetronimo()),
-      m_active_tetronimo(Tetronimo{.ty = Piece::L, .rotation = 0, .pos = {0, 0}}) {
+      m_active_tetronimo(Tetronimo{.ty = Piece::L, .rotation = 0, .pos = {0, 0}}),
+      m_game_state(GameState::Start) {
   m_timing.SetInterval(TIMER_DROP, 500ms);
 }
 
@@ -72,6 +73,10 @@ constexpr bool Tetris::TryRotate() noexcept {
   return false;
 }
 
+void Tetris::DrawStartOverlay() noexcept {}
+void Tetris::DrawPausedOverlay() noexcept {}
+void Tetris::DrawGameOverOverlay() noexcept {}
+
 void Tetris::Draw() noexcept {
   Vector2   origin     = static_cast<Vector2>(GetOrigin());
   f32       unit       = static_cast<f32>(GetUnitSize());
@@ -82,20 +87,22 @@ void Tetris::Draw() noexcept {
 
   // draw active tetronimo (beneath the lines)
 
-  auto [x0, y0] = m_active_tetronimo.pos;
-  usize index   = static_cast<usize>(m_active_tetronimo.ty);
-  auto& cells   = PIECES[index][m_active_tetronimo.rotation];
+  if (m_game_state == GameState::Running || m_game_state == GameState::GameOver) {
+    auto [x0, y0] = m_active_tetronimo.pos;
+    usize index   = static_cast<usize>(m_active_tetronimo.ty);
+    auto& cells   = PIECES[index][m_active_tetronimo.rotation];
 
-  for (Position const& pos : cells) {
-    auto      resolved_coords = static_cast<Vector2>(pos);
-    Rectangle component_rec   = {
-          .x      = grid_start.x + resolved_coords.x * unit + x0 * unit,
-          .y      = grid_start.y + resolved_coords.y * unit + y0 * unit,
-          .width  = unit,
-          .height = unit,
-    };
+    for (Position const& pos : cells) {
+      auto      resolved_coords = static_cast<Vector2>(pos);
+      Rectangle component_rec   = {
+            .x      = grid_start.x + resolved_coords.x * unit + x0 * unit,
+            .y      = grid_start.y + resolved_coords.y * unit + y0 * unit,
+            .width  = unit,
+            .height = unit,
+      };
 
-    DrawRectangleRec(component_rec, PIECE_COLOR[static_cast<usize>(m_active_tetronimo.ty)]);
+      DrawRectangleRec(component_rec, PIECE_COLOR[static_cast<usize>(m_active_tetronimo.ty)]);
+    }
   }
 
   for (usize i = 0; i < m_grid.size(); ++i) {
@@ -147,25 +154,42 @@ constexpr void Tetris::WriteTetronimo() noexcept {
 void Tetris::Update() noexcept {
   m_timing.Update();
 
-  if (IsKeyDown(KEY_LEFT) && m_timing.CanRepeatKey(KEY_LEFT, 100ms) && CanShiftLeft()) {
-    ShiftLeft();
-  } else if (IsKeyDown(KEY_RIGHT) && m_timing.CanRepeatKey(KEY_RIGHT, 100ms) && CanShiftRight()) {
-    ShiftRight();
-  } else if (IsKeyDown(KEY_UP) && m_timing.CanRepeatKey(KEY_UP, 250ms)) {
-    TryRotate();
-  }
+  switch (m_game_state) {
+    case GameState::Start:
+      if (IsKeyDown(KEY_SPACE)) {
+        m_game_state = GameState::Running;
+      }
+      break;
+    case GameState::Running:
+      if (IsKeyDown(KEY_LEFT) && m_timing.CanRepeatKey(KEY_LEFT, 100ms) && CanShiftLeft()) {
+        ShiftLeft();
+      } else if (IsKeyDown(KEY_RIGHT) && m_timing.CanRepeatKey(KEY_RIGHT, 100ms) && CanShiftRight()) {
+        ShiftRight();
+      } else if (IsKeyDown(KEY_UP) && m_timing.CanRepeatKey(KEY_UP, 250ms)) {
+        TryRotate();
+      }
 
-  if (CanDrop()) {
-    if (m_timing.Tick(TIMER_DROP) || IsKeyDown(KEY_DOWN) && m_timing.CanRepeatKey(KEY_DOWN, 50ms)) {
-      Drop();
-    }
-  } else {
-    WriteTetronimo();
-    m_active_tetronimo = m_piece_buffer.Dequeue().value();
-    m_piece_buffer.Enqueue(RandomTetronimo());
-  }
+      if (CanDrop()) {
+        if (m_timing.Tick(TIMER_DROP) || IsKeyDown(KEY_DOWN) && m_timing.CanRepeatKey(KEY_DOWN, 50ms)) {
+          Drop();
+        }
+      } else {
+        WriteTetronimo();
+        m_active_tetronimo = m_piece_buffer.Dequeue().value();
+        m_piece_buffer.Enqueue(RandomTetronimo());
+        if (!Fits(m_active_tetronimo.pos, m_active_tetronimo.rotation)) {
+          m_game_state = GameState::GameOver;
+        }
+      }
 
-  RemoveFilledRows();
+      RemoveFilledRows();
+
+      break;
+    case GameState::Paused:
+      break;
+    case GameState::GameOver:
+      break;
+  }
 }
 
 void Tetris::Run() noexcept {
