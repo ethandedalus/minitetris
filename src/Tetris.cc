@@ -1,0 +1,202 @@
+#include "Tetris.h"
+
+#include <raylib.h>
+
+#include "DesignSystem.h"
+
+using namespace std::chrono_literals;
+
+Tetris::Tetris(Config const& config) noexcept
+    : m_config(config),
+      m_piece_buffer(
+          RandomTetronimo(),
+          RandomTetronimo(),
+          RandomTetronimo()),
+      m_active_tetronimo(Tetronimo{.ty = Piece::L, .rotation = 0, .pos = {0, 0}}) {
+  m_timing.SetInterval(TIMER_DROP, 500ms);
+}
+
+Tetronimo Tetris::RandomTetronimo() noexcept {
+  return Tetronimo{.ty = RandomPiece(), .rotation = 0, .pos = {0, 0}};
+}
+
+constexpr Position Tetris::GetOrigin() const noexcept {
+  usize width  = GetScreenWidth();
+  usize height = GetScreenHeight();
+  if (width > height) {
+    return {static_cast<i32>(width - height) / 2, 0};
+  } else if (height > width) {
+    return {0, static_cast<i32>(height - width) / 2};
+  } else {
+    return {0, 0};
+  }
+}
+
+constexpr usize Tetris::GetUnitSize() const noexcept {
+  usize width  = GetScreenWidth();
+  usize height = GetScreenHeight();
+
+  usize unit = width / (Tetris::ROWS + 2);
+  if (width > height) {
+    unit = height / (Tetris::ROWS + 2);
+  }
+  return unit;
+}
+
+constexpr bool Tetris::CanDrop() const noexcept {
+  return Fits({m_active_tetronimo.pos.x, m_active_tetronimo.pos.y + 1}, m_active_tetronimo.rotation);
+}
+
+constexpr bool Tetris::CanShiftLeft() const noexcept {
+  return Fits({m_active_tetronimo.pos.x - 1, m_active_tetronimo.pos.y}, m_active_tetronimo.rotation);
+}
+
+constexpr bool Tetris::CanShiftRight() const noexcept {
+  return Fits({m_active_tetronimo.pos.x + 1, m_active_tetronimo.pos.y}, m_active_tetronimo.rotation);
+}
+
+constexpr bool Tetris::TryRotate() noexcept {
+  usize new_rotation = (m_active_tetronimo.rotation + 1) % 4;
+
+  for (auto [dx, dy] : KICK_OFFSETS) {
+    Position candidate = {m_active_tetronimo.pos.x + dx, m_active_tetronimo.pos.y + dy};
+    if (Fits(candidate, new_rotation)) {
+      m_active_tetronimo.pos      = candidate;
+      m_active_tetronimo.rotation = new_rotation;
+      return true;
+    }
+  }
+
+  return false;
+}
+
+void Tetris::Draw() noexcept {
+  Vector2   origin     = static_cast<Vector2>(GetOrigin());
+  f32       unit       = static_cast<f32>(GetUnitSize());
+  Vector2   grid_start = {.x = origin.x + unit, .y = origin.y + unit};
+  Rectangle tetris_rec = {.x = grid_start.x, .y = grid_start.y, .width = unit * COLS, .height = unit * ROWS};
+
+  ClearBackground(BACKGROUND);
+
+  // draw active tetronimo (beneath the lines)
+
+  auto [x0, y0] = m_active_tetronimo.pos;
+  usize index   = static_cast<usize>(m_active_tetronimo.ty);
+  auto& cells   = PIECES[index][m_active_tetronimo.rotation];
+
+  for (Position const& pos : cells) {
+    auto      resolved_coords = static_cast<Vector2>(pos);
+    Rectangle component_rec   = {
+          .x      = grid_start.x + resolved_coords.x * unit + x0 * unit,
+          .y      = grid_start.y + resolved_coords.y * unit + y0 * unit,
+          .width  = unit,
+          .height = unit,
+    };
+
+    DrawRectangleRec(component_rec, PIECE_COLOR[static_cast<usize>(m_active_tetronimo.ty)]);
+  }
+
+  for (usize i = 0; i < m_grid.size(); ++i) {
+    if (m_grid[i] != CELL_EMPTY) {
+      auto      resolved_coords = static_cast<Vector2>(Position{static_cast<i32>(i % COLS), static_cast<i32>(i / COLS)});
+      Rectangle component_rec   = {
+            .x      = grid_start.x + resolved_coords.x * unit,
+            .y      = grid_start.y + resolved_coords.y * unit,
+            .width  = unit,
+            .height = unit,
+      };
+
+      DrawRectangleRec(component_rec, PIECE_COLOR[m_grid[i] - 1]);
+    }
+  }
+
+  // draw grid lines
+  for (usize i = 1; i < COLS; ++i) {
+    DrawLineEx(
+        {.x = grid_start.x + i * unit, .y = grid_start.y},
+        {.x = grid_start.x + i * unit, .y = grid_start.y + unit * ROWS},
+        2.0F, OVERLAY);
+  }
+
+  for (usize i = 1; i < ROWS; ++i) {
+    DrawLineEx(
+        {.x = grid_start.x, .y = grid_start.y + i * unit},
+        {.x = grid_start.x + unit * COLS, .y = grid_start.y + i * unit},
+        2.0F, OVERLAY);
+  }
+
+  // draw grid
+
+  DrawRectangleLinesEx(tetris_rec, 2.0F, FOREGROUND);
+}
+
+constexpr void Tetris::WriteTetronimo() noexcept {
+  auto [x0, y0]      = m_active_tetronimo.pos;
+  usize index        = static_cast<usize>(m_active_tetronimo.ty);
+  auto& cells        = PIECES[index][m_active_tetronimo.rotation];
+  auto& [a, b, c, d] = cells;
+  for (auto const& [x, y] : cells) {
+    Position resolved_coords = {x0 + x, y0 + y};
+    usize    q               = resolved_coords.x + resolved_coords.y * COLS;
+    m_grid[q]                = PIECE_CELL_TYPE[index];
+  }
+}
+
+void Tetris::Update() noexcept {
+  m_timing.Update();
+
+  if (IsKeyDown(KEY_LEFT) && m_timing.CanRepeatKey(KEY_LEFT, 100ms) && CanShiftLeft()) {
+    ShiftLeft();
+  } else if (IsKeyDown(KEY_RIGHT) && m_timing.CanRepeatKey(KEY_RIGHT, 100ms) && CanShiftRight()) {
+    ShiftRight();
+  } else if (IsKeyDown(KEY_UP) && m_timing.CanRepeatKey(KEY_UP, 250ms)) {
+    TryRotate();
+  }
+
+  if (CanDrop()) {
+    if (m_timing.Tick(TIMER_DROP) || IsKeyDown(KEY_DOWN) && m_timing.CanRepeatKey(KEY_DOWN, 50ms)) {
+      Drop();
+    }
+  } else {
+    WriteTetronimo();
+    m_active_tetronimo = m_piece_buffer.Dequeue().value();
+    m_piece_buffer.Enqueue(RandomTetronimo());
+  }
+}
+
+void Tetris::Run() noexcept {
+  SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+  InitWindow(m_config.start_w, m_config.start_h, "MiniTetris");
+
+  SetTargetFPS(60);
+
+  while (!WindowShouldClose()) {
+    Update();
+
+    BeginDrawing();
+    Draw();
+    EndDrawing();
+  }
+
+  CloseWindow();
+}
+
+constexpr bool Tetris::Fits(Position const& pos, usize rotation) const noexcept {
+  usize index = static_cast<usize>(m_active_tetronimo.ty);
+  auto& cells = PIECES[index][rotation];
+
+  for (auto const& [x, y] : cells) {
+    i32 nx = pos.x + x;
+    i32 ny = pos.y + y;
+
+    if (nx < 0 || nx >= static_cast<i32>(COLS) ||
+        ny < 0 || ny >= static_cast<i32>(ROWS)) {
+      return false;
+    }
+
+    if (m_grid[ny * COLS + nx] != CELL_EMPTY) {
+      return false;
+    }
+  }
+  return true;
+}
