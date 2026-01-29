@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #include "DesignSystem.h"
+#include "Resources.h"
 
 using namespace std::chrono_literals;
 
@@ -14,13 +15,15 @@ Tetris::Tetris(Config const& config) noexcept
           RandomTetronimo(),
           RandomTetronimo(),
           RandomTetronimo()),
-      m_active_tetronimo(Tetronimo{.ty = Piece::L, .rotation = 0, .pos = {0, 0}}),
-      m_game_state(GameState::Start) {
-  m_timing.SetInterval(TIMER_DROP, 500ms);
+      m_active_tetronimo(RandomTetronimo()),
+      m_game_state(GameState::Start),
+      m_score(0),
+      m_level(0) {
+  m_timing.SetInterval(TIMER_DROP, 1000ms);
 }
 
 Tetronimo Tetris::RandomTetronimo() noexcept {
-  return Tetronimo{.ty = RandomPiece(), .rotation = 0, .pos = {0, 0}};
+  return Tetronimo{.ty = RandomPiece(), .rotation = 0, .pos = {RandomInt(3, 5), 0}};
 }
 
 constexpr Position Tetris::GetOrigin() const noexcept {
@@ -73,7 +76,25 @@ constexpr bool Tetris::TryRotate() noexcept {
   return false;
 }
 
-void Tetris::DrawStartOverlay() noexcept {}
+void Tetris::DrawStartOverlay() noexcept {
+  Vector2 origin     = static_cast<Vector2>(GetOrigin());
+  f32     unit       = static_cast<f32>(GetUnitSize());
+  Vector2 grid_start = {.x = origin.x + unit, .y = origin.y + unit};
+
+  Rectangle overlay_rec = {.x = grid_start.x, .y = grid_start.y, .width = unit * (COLS * 2), .height = unit * ROWS};
+
+  DrawRectangleRec(overlay_rec, OVERLAY);
+
+  DrawTexturePro(
+      m_start_screen_texture,
+      {
+          .x      = 0,
+          .y      = 0,
+          .width  = static_cast<float>(m_start_screen_texture.width),
+          .height = static_cast<float>(m_start_screen_texture.height),
+      },
+      overlay_rec, {0, 0}, 0.0F, FOREGROUND);
+}
 void Tetris::DrawPausedOverlay() noexcept {}
 void Tetris::DrawGameOverOverlay() noexcept {}
 
@@ -198,11 +219,26 @@ void Tetris::Run() noexcept {
 
   SetTargetFPS(60);
 
+  Image img              = LoadImageFromMemory(".png", assets::START_SCREEN, sizeof(assets::START_SCREEN));
+  m_start_screen_texture = LoadTextureFromImage(img);
+
   while (!WindowShouldClose()) {
     Update();
 
     BeginDrawing();
-    Draw();
+    switch (m_game_state) {
+      case GameState::Start:
+        DrawStartOverlay();
+        break;
+      case GameState::Running:
+        Draw();
+        break;
+      case GameState::Paused:
+        break;
+      case GameState::GameOver:
+        break;
+    }
+
     EndDrawing();
   }
 

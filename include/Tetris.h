@@ -95,6 +95,9 @@ private:
   Config                       m_config;
   Timing                       m_timing;
   GameState                    m_game_state;
+  usize                        m_score;
+  usize                        m_level;
+  Texture2D                    m_start_screen_texture{};
 };
 
 template <>
