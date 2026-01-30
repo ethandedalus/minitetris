@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cassert>
-#include <chrono>
 #include <format>
 #include <random>
 
@@ -52,8 +51,9 @@ private:
 
   void Update() noexcept;
 
-  constexpr Position GetOrigin() const noexcept;
-  constexpr usize    GetUnitSize() const noexcept;
+  constexpr Position                 GetOrigin() const noexcept;
+  constexpr usize                    GetUnitSize() const noexcept;
+  constexpr static const char* const TETRIS_STRING = "TETRIS";
 
   constexpr CellType& operator[](usize i, usize j) noexcept {
     usize index = COLS * i + j;
@@ -98,7 +98,6 @@ private:
   GameState                    m_game_state;
   usize                        m_score;
   usize                        m_level;
-  Texture2D                    m_start_screen_texture{};
   bool                         m_locking;
 };
 

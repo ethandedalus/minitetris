@@ -4,8 +4,12 @@
 
 namespace assets {
 
-constexpr u8 START_SCREEN[] = {
-#embed "../resources/start.png"
+constexpr u8 PIXELOID_MONO[] = {
+#embed "../resources/fonts/PixeloidMono.ttf"
+};
+
+constexpr u8 MAIN_THEME[] = {
+#embed "../resources/main-theme.mp3"
 };
 
 }  // namespace assets

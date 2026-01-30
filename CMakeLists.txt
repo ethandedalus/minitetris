@@ -23,6 +23,7 @@ include(cmake/fetch_raylib.cmake)
 set(
     SRCS
 
+    src/Text.cc
     src/Tetris.cc
     src/Timing.cc
 )

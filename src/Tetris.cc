@@ -6,6 +6,7 @@
 
 #include "DesignSystem.h"
 #include "Resources.h"
+#include "Text.h"
 
 using namespace std::chrono_literals;
 
@@ -90,16 +91,65 @@ void Tetris::DrawStartOverlay() noexcept {
 
   DrawRectangleRec(overlay_rec, OVERLAY);
 
-  DrawTexturePro(
-      m_start_screen_texture,
-      {
-          .x      = 0,
-          .y      = 0,
-          .width  = static_cast<float>(m_start_screen_texture.width),
-          .height = static_cast<float>(m_start_screen_texture.height),
-      },
-      overlay_rec, {0, 0}, 0.0F, FOREGROUND);
+  f32 title_bounding_box_width = overlay_rec.width * 0.9;
+
+  f32 max_text_width = title_bounding_box_width - 2 * unit;
+
+  f32 font_size = 200.0F;
+
+  Vector2 dimensions = GetTextDimensions("TETRIS", font_size, 2.0F);
+  while (dimensions.x > max_text_width) {
+    font_size -= 1;
+    dimensions = GetTextDimensions("TETRIS", font_size, 2.0F);
+  }
+
+  Rectangle bounding_box = {.x = grid_start.x + unit, .y = grid_start.y + unit, .width = title_bounding_box_width, .height = dimensions.y};
+
+  DrawRectangleRoundedLinesEx(bounding_box, 0.05F, 0, 2, FOREGROUND);
+
+  f32 offset = bounding_box.x + unit;
+
+  // font is monospaced so this works
+  Vector2 letter_dimensions = GetTextDimensions("T", font_size, 2.0F);
+  for (usize i = 0; auto const& c : "TETRIS") {
+    WriteText(std::format("{}", c).c_str(),
+              (Vector2){
+                  .x = static_cast<float>(offset),
+                  .y = overlay_rec.y + unit,
+              },
+              font_size, 2.0F, PIECE_COLOR[i]);
+    offset += letter_dimensions.x + 2.0F;
+    i += 1;
+  }
+
+  font_size                           = 50;
+  f32 start_button_bounding_box_width = overlay_rec.width * 0.4;
+  f32 max_start_button_text_width     = start_button_bounding_box_width - 2 * 0.05 * start_button_bounding_box_width;
+
+  f32 start_button_font_size = 50.0F;
+  dimensions                 = GetTextDimensions("PRESS SPACE TO START", font_size, 2.0F);
+
+  while (dimensions.x > max_start_button_text_width) {
+    font_size -= 1;
+    dimensions = GetTextDimensions("PRESS SPACE TO START", font_size, 2.0F);
+  }
+
+  bounding_box = {
+      .x      = (grid_start.x + (overlay_rec.width - start_button_bounding_box_width) / 2),
+      .y      = grid_start.y + overlay_rec.height / 2,
+      .width  = start_button_bounding_box_width,
+      .height = dimensions.y * 2,
+  };
+  DrawRectangleRoundedLinesEx(bounding_box, 0.1F, 0, 2, FOREGROUND);
+
+  WriteText("PRESS SPACE TO START",
+            (Vector2){
+                .x = static_cast<float>(bounding_box.x + 0.05 * bounding_box.width),
+                .y = static_cast<float>(bounding_box.y + 0.25 * bounding_box.height),
+            },
+            font_size, 2.0F, FOREGROUND);
 }
+
 void Tetris::DrawPausedOverlay() noexcept {}
 void Tetris::DrawGameOverOverlay() noexcept {}
 
@@ -230,9 +280,6 @@ void Tetris::Run() noexcept {
   InitWindow(m_config.start_w, m_config.start_h, "MiniTetris");
 
   SetTargetFPS(60);
-
-  Image img              = LoadImageFromMemory(".png", assets::START_SCREEN, sizeof(assets::START_SCREEN));
-  m_start_screen_texture = LoadTextureFromImage(img);
 
   while (!WindowShouldClose()) {
     Update();
