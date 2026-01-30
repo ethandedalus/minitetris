@@ -20,6 +20,10 @@ public:
     m_timers[id].interval = interval;
   }
 
+  constexpr inline void Reset(i32 id) noexcept {
+    m_timers[id].last_tick = SteadyClock::now();
+  }
+
   bool Tick(i32 id) noexcept;
   bool CanRepeatKey(i32 key, Duration delay) noexcept;
 

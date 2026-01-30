@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <chrono>
 #include <format>
 #include <random>
 
@@ -31,6 +32,7 @@ public:
 private:
   enum TimerID {
     TIMER_DROP,
+    TIMER_LOCK,
   };
 
   constexpr static usize              ROWS         = 20;
@@ -68,7 +70,6 @@ private:
   constexpr bool        CanDrop() const noexcept;
   constexpr bool        CanShiftLeft() const noexcept;
   constexpr bool        CanShiftRight() const noexcept;
-  constexpr bool        CanRotate() const noexcept;
   constexpr bool        Fits(Position const& pos, usize rotation) const noexcept;
   constexpr inline void Drop() noexcept { m_active_tetronimo.pos.y += 1; }
   constexpr inline void ShiftLeft() noexcept { m_active_tetronimo.pos.x -= 1; }
@@ -88,16 +89,17 @@ private:
 
   Tetronimo RandomTetronimo() noexcept;
 
+  std::mt19937                 m_rng;
   Array<CellType, ROWS * COLS> m_grid{};
   TinyQueue<Tetronimo, 4>      m_piece_buffer;
   Tetronimo                    m_active_tetronimo;
-  std::mt19937                 m_rng{std::random_device{}()};
   Config                       m_config;
   Timing                       m_timing;
   GameState                    m_game_state;
   usize                        m_score;
   usize                        m_level;
   Texture2D                    m_start_screen_texture{};
+  bool                         m_locking;
 };
 
 template <>

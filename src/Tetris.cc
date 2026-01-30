@@ -11,6 +11,7 @@ using namespace std::chrono_literals;
 
 Tetris::Tetris(Config const& config) noexcept
     : m_config(config),
+      m_rng{static_cast<u32>(std::chrono::steady_clock::now().time_since_epoch().count()) ^ std::random_device{}()},
       m_piece_buffer(
           RandomTetronimo(),
           RandomTetronimo(),
@@ -20,10 +21,14 @@ Tetris::Tetris(Config const& config) noexcept
       m_score(0),
       m_level(0) {
   m_timing.SetInterval(TIMER_DROP, 1000ms);
+  m_timing.SetInterval(TIMER_LOCK, 500ms);
 }
 
 Tetronimo Tetris::RandomTetronimo() noexcept {
-  return Tetronimo{.ty = RandomPiece(), .rotation = 0, .pos = {RandomInt(3, 5), 0}};
+  auto piece = RandomPiece();
+  auto pos   = RandomInt(3, 5);
+
+  return Tetronimo{.ty = piece, .rotation = 0, .pos = {pos, 0}};
 }
 
 constexpr Position Tetris::GetOrigin() const noexcept {
@@ -182,6 +187,7 @@ void Tetris::Update() noexcept {
       }
       break;
     case GameState::Running:
+
       if (IsKeyDown(KEY_LEFT) && m_timing.CanRepeatKey(KEY_LEFT, 100ms) && CanShiftLeft()) {
         ShiftLeft();
       } else if (IsKeyDown(KEY_RIGHT) && m_timing.CanRepeatKey(KEY_RIGHT, 100ms) && CanShiftRight()) {
@@ -191,19 +197,25 @@ void Tetris::Update() noexcept {
       }
 
       if (CanDrop()) {
+        m_locking = false;
         if (m_timing.Tick(TIMER_DROP) || IsKeyDown(KEY_DOWN) && m_timing.CanRepeatKey(KEY_DOWN, 50ms)) {
           Drop();
         }
       } else {
-        WriteTetronimo();
-        m_active_tetronimo = m_piece_buffer.Dequeue().value();
-        m_piece_buffer.Enqueue(RandomTetronimo());
-        if (!Fits(m_active_tetronimo.pos, m_active_tetronimo.rotation)) {
-          m_game_state = GameState::GameOver;
+        if (!m_locking) {
+          m_locking = true;
+          m_timing.Reset(TIMER_LOCK);
+        }
+        if (m_timing.Tick(TIMER_LOCK) || (!CanShiftLeft() && !CanShiftRight())) {
+          WriteTetronimo();
+          RemoveFilledRows();
+          m_active_tetronimo = m_piece_buffer.Dequeue().value();
+          m_piece_buffer.Enqueue(RandomTetronimo());
+          if (!Fits(m_active_tetronimo.pos, m_active_tetronimo.rotation)) {
+            m_game_state = GameState::GameOver;
+          }
         }
       }
-
-      RemoveFilledRows();
 
       break;
     case GameState::Paused:

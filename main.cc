@@ -1,4 +1,3 @@
-#include "Resources.h"
 #include "Tetris.h"
 
 int main() {
