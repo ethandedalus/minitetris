@@ -12,10 +12,7 @@ using namespace std::chrono_literals;
 Tetris::Tetris(Config const& config) noexcept
     : m_config(config),
       m_rng{static_cast<u32>(std::chrono::steady_clock::now().time_since_epoch().count()) ^ std::random_device{}()},
-      m_piece_buffer(
-          RandomTetronimo(),
-          RandomTetronimo(),
-          RandomTetronimo()),
+      m_pieces(RandomTetronimo(), RandomTetronimo(), RandomTetronimo()),
       m_active_tetronimo(RandomTetronimo()),
       m_game_state(GameState::Start),
       m_score(0),
@@ -321,6 +318,34 @@ void Tetris::Draw() noexcept {
   // draw grid
 
   DrawRectangleLinesEx(tetris_rec, 2.0F, FOREGROUND);
+
+  // draw piece buffer rec
+
+  Rectangle piece_buffer_rec = {.x = grid_start.x + unit * (COLS + 1), .y = grid_start.y, .width = unit * (COLS - 1), .height = unit * COLS};
+  DrawRectangleLinesEx(piece_buffer_rec, 2.0F, FOREGROUND);
+
+  // draw pieces in piece buffer (up next queue)
+  for (usize i = 0; i < m_pieces.Size(); ++i) {
+    f32              start_x = piece_buffer_rec.x + unit;
+    f32              start_y = piece_buffer_rec.y + unit;
+    Tetronimo const& t       = m_pieces[i];
+
+    usize index = static_cast<usize>(t.ty);
+    auto& cells = PIECES[index][t.rotation];
+
+    for (Position const& pos : cells) {
+      auto      resolved_coords = static_cast<Vector2>(pos);
+      Rectangle component_rec   = {
+            .x      = start_x + resolved_coords.x * unit,
+            .y      = start_y + unit * (3 * i) + resolved_coords.y * unit,
+            .width  = unit,
+            .height = unit,
+      };
+
+      DrawRectangleRec(component_rec, PIECE_COLOR[static_cast<usize>(t.ty)]);
+      DrawRectangleLinesEx(component_rec, 1.0F, OVERLAY);
+    }
+  }
 }
 
 constexpr void Tetris::WriteTetronimo() noexcept {
@@ -368,8 +393,7 @@ void Tetris::Update() noexcept {
         if (m_timing.Tick(TIMER_LOCK) || (!CanShiftLeft() && !CanShiftRight())) {
           WriteTetronimo();
           RemoveFilledRows();
-          m_active_tetronimo = m_piece_buffer.Dequeue().value();
-          m_piece_buffer.Enqueue(RandomTetronimo());
+          m_active_tetronimo = m_pieces.Cycle(RandomTetronimo());
           if (!Fits(m_active_tetronimo.pos, m_active_tetronimo.rotation)) {
             m_game_state = GameState::GameOver;
           }
@@ -449,7 +473,7 @@ constexpr bool Tetris::Fits(Position const& pos, usize rotation) const noexcept 
 }
 
 constexpr void Tetris::Reset() noexcept {
-  m_piece_buffer     = {RandomTetronimo(), RandomTetronimo(), RandomTetronimo()};
+  m_pieces           = {RandomTetronimo(), RandomTetronimo(), RandomTetronimo()};
   m_active_tetronimo = RandomTetronimo();
   m_level            = 1;
   m_score            = 0;

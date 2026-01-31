@@ -4,9 +4,9 @@
 #include <format>
 #include <random>
 
+#include "RingBuffer.h"
 #include "Tetronimo.h"
 #include "Timing.h"
-#include "TinyQueue.h"
 #include "Types.h"
 
 enum class GameState {
@@ -90,7 +90,7 @@ private:
 
   std::mt19937                 m_rng;
   Array<CellType, ROWS * COLS> m_grid{};
-  TinyQueue<Tetronimo, 4>      m_piece_buffer;
+  RingBuffer<Tetronimo, 3>     m_pieces;
   Tetronimo                    m_active_tetronimo;
   Config                       m_config;
   Timing                       m_timing;
