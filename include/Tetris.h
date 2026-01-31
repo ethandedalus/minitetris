@@ -51,9 +51,8 @@ private:
 
   void Update() noexcept;
 
-  constexpr Position                 GetOrigin() const noexcept;
-  constexpr usize                    GetUnitSize() const noexcept;
-  constexpr static const char* const TETRIS_STRING = "TETRIS";
+  constexpr Position GetOrigin() const noexcept;
+  constexpr usize    GetUnitSize() const noexcept;
 
   constexpr CellType& operator[](usize i, usize j) noexcept {
     usize index = COLS * i + j;

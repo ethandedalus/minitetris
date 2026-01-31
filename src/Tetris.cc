@@ -5,7 +5,6 @@
 #include <algorithm>
 
 #include "DesignSystem.h"
-#include "Resources.h"
 #include "Text.h"
 
 using namespace std::chrono_literals;
@@ -150,8 +149,117 @@ void Tetris::DrawStartOverlay() noexcept {
             font_size, 2.0F, FOREGROUND);
 }
 
-void Tetris::DrawPausedOverlay() noexcept {}
-void Tetris::DrawGameOverOverlay() noexcept {}
+void Tetris::DrawPausedOverlay() noexcept {
+  Vector2 origin     = static_cast<Vector2>(GetOrigin());
+  f32     unit       = static_cast<f32>(GetUnitSize());
+  Vector2 grid_start = {.x = origin.x + unit, .y = origin.y + unit};
+
+  Rectangle overlay_rec = {.x = grid_start.x, .y = grid_start.y, .width = unit * (COLS * 2), .height = unit * ROWS};
+
+  DrawRectangleRec(overlay_rec, OVERLAY);
+
+  f32 title_bounding_box_width = overlay_rec.width * 0.9;
+
+  f32 max_text_width = title_bounding_box_width - 2 * unit;
+
+  f32 font_size = 200.0F;
+
+  Vector2 dimensions = GetTextDimensions("PAUSED", font_size, 2.0F);
+  while (dimensions.x > max_text_width) {
+    font_size -= 1;
+    dimensions = GetTextDimensions("PAUSED", font_size, 2.0F);
+  }
+
+  Rectangle bounding_box = {.x = grid_start.x + unit, .y = grid_start.y + unit, .width = title_bounding_box_width, .height = dimensions.y};
+
+  DrawRectangleRoundedLinesEx(bounding_box, 0.05F, 0, 2, FOREGROUND);
+
+  f32 offset = bounding_box.x + unit;
+
+  WriteText("PAUSED",
+            (Vector2){
+                .x = static_cast<float>(offset),
+                .y = overlay_rec.y + unit,
+            },
+            font_size, 2.0F, FOREGROUND);
+
+  font_size                           = 50;
+  f32 start_button_bounding_box_width = overlay_rec.width * 0.4;
+  f32 max_start_button_text_width     = start_button_bounding_box_width - 2 * 0.05 * start_button_bounding_box_width;
+
+  f32 start_button_font_size = 50.0F;
+  dimensions                 = GetTextDimensions("PRESS P TO CONTINUE", font_size, 2.0F);
+
+  while (dimensions.x > max_start_button_text_width) {
+    font_size -= 1;
+    dimensions = GetTextDimensions("PRESS P TO CONTINUE", font_size, 2.0F);
+  }
+
+  bounding_box = {
+      .x      = (grid_start.x + (overlay_rec.width - start_button_bounding_box_width) / 2),
+      .y      = grid_start.y + overlay_rec.height / 2,
+      .width  = start_button_bounding_box_width,
+      .height = dimensions.y * 2,
+  };
+  DrawRectangleRoundedLinesEx(bounding_box, 0.1F, 0, 2, FOREGROUND);
+
+  WriteText("PRESS P TO CONTINUE",
+            (Vector2){
+                .x = static_cast<float>(bounding_box.x + 0.05 * bounding_box.width),
+                .y = static_cast<float>(bounding_box.y + 0.25 * bounding_box.height),
+            },
+            font_size, 2.0F, FOREGROUND);
+
+  bounding_box = {
+      .x      = (grid_start.x + (overlay_rec.width - start_button_bounding_box_width) / 2),
+      .y      = static_cast<float>(grid_start.y + overlay_rec.height / 2 + dimensions.y * 3),
+      .width  = start_button_bounding_box_width,
+      .height = dimensions.y * 2,
+  };
+  DrawRectangleRoundedLinesEx(bounding_box, 0.1F, 0, 2, FOREGROUND);
+
+  WriteText("PRESS R TO RESTART ",
+            (Vector2){
+                .x = static_cast<float>(bounding_box.x + 0.05 * bounding_box.width),
+                .y = static_cast<float>(bounding_box.y + 0.25 * bounding_box.height),
+            },
+            font_size, 2.0F, FOREGROUND);
+}
+
+void Tetris::DrawGameOverOverlay() noexcept {
+  Vector2 origin     = static_cast<Vector2>(GetOrigin());
+  f32     unit       = static_cast<f32>(GetUnitSize());
+  Vector2 grid_start = {.x = origin.x + unit, .y = origin.y + unit};
+
+  Rectangle overlay_rec = {.x = grid_start.x, .y = grid_start.y, .width = unit * (COLS * 2), .height = unit * ROWS};
+
+  DrawRectangleRec(overlay_rec, OVERLAY);
+
+  f32 title_bounding_box_width = overlay_rec.width * 0.9;
+
+  f32 max_text_width = title_bounding_box_width - 2 * unit;
+
+  f32 font_size = 200.0F;
+
+  Vector2 dimensions = GetTextDimensions("GAMEOVER", font_size, 2.0F);
+  while (dimensions.x > max_text_width) {
+    font_size -= 1;
+    dimensions = GetTextDimensions("GAMEOVER", font_size, 2.0F);
+  }
+
+  Rectangle bounding_box = {.x = grid_start.x + unit, .y = grid_start.y + unit, .width = title_bounding_box_width, .height = dimensions.y};
+
+  DrawRectangleRoundedLinesEx(bounding_box, 0.05F, 0, 2, FOREGROUND);
+
+  f32 offset = bounding_box.x + unit;
+
+  WriteText("GAMEOVER",
+            (Vector2){
+                .x = static_cast<float>(offset),
+                .y = overlay_rec.y + unit,
+            },
+            font_size, 2.0F, FOREGROUND);
+}
 
 void Tetris::Draw() noexcept {
   Vector2   origin     = static_cast<Vector2>(GetOrigin());
@@ -237,13 +345,14 @@ void Tetris::Update() noexcept {
       }
       break;
     case GameState::Running:
-
       if (IsKeyDown(KEY_LEFT) && m_timing.CanRepeatKey(KEY_LEFT, 100ms) && CanShiftLeft()) {
         ShiftLeft();
       } else if (IsKeyDown(KEY_RIGHT) && m_timing.CanRepeatKey(KEY_RIGHT, 100ms) && CanShiftRight()) {
         ShiftRight();
       } else if (IsKeyDown(KEY_UP) && m_timing.CanRepeatKey(KEY_UP, 250ms)) {
         TryRotate();
+      } else if (IsKeyDown(KEY_P) && m_timing.CanRepeatKey(KEY_P, 300ms)) {
+        m_game_state = GameState::Paused;
       }
 
       if (CanDrop()) {
@@ -269,8 +378,21 @@ void Tetris::Update() noexcept {
 
       break;
     case GameState::Paused:
+      if (IsKeyDown(KEY_P) && m_timing.CanRepeatKey(KEY_P, 300ms)) {
+        m_game_state = GameState::Running;
+      }
+      if (IsKeyDown(KEY_R) && m_timing.CanRepeatKey(KEY_R, 300ms)) {
+        Reset();
+        m_game_state = GameState::Start;
+      }
+      DrawPausedOverlay();
       break;
     case GameState::GameOver:
+      if (IsKeyDown(KEY_R) && m_timing.CanRepeatKey(KEY_R, 300ms)) {
+        Reset();
+        m_game_state = GameState::Start;
+      }
+      DrawGameOverOverlay();
       break;
   }
 }
@@ -293,8 +415,10 @@ void Tetris::Run() noexcept {
         Draw();
         break;
       case GameState::Paused:
+        DrawPausedOverlay();
         break;
       case GameState::GameOver:
+        DrawGameOverOverlay();
         break;
     }
 
@@ -325,6 +449,10 @@ constexpr bool Tetris::Fits(Position const& pos, usize rotation) const noexcept 
 }
 
 constexpr void Tetris::Reset() noexcept {
+  m_piece_buffer     = {RandomTetronimo(), RandomTetronimo(), RandomTetronimo()};
+  m_active_tetronimo = RandomTetronimo();
+  m_level            = 1;
+  m_score            = 0;
   std::fill(m_grid.begin(), m_grid.end(), CELL_EMPTY);
 }
 
