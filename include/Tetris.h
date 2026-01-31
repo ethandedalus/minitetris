@@ -4,6 +4,7 @@
 #include <format>
 #include <random>
 
+#include "AudioPlayer.h"
 #include "RingBuffer.h"
 #include "Tetronimo.h"
 #include "Timing.h"
@@ -42,6 +43,8 @@ private:
       {1, 0},   // right
       {0, -1},  // up (for floor kicks)
   }};
+
+  constexpr static Array<Position, 5> JLSTZ_KICK_OFFSETS = {{}};
 
   void Draw() noexcept;
 
@@ -97,7 +100,10 @@ private:
   GameState                    m_game_state;
   usize                        m_score;
   usize                        m_level;
+  usize                        m_lines_cleared;
   bool                         m_locking;
+  bool                         m_play_sound_effects;
+  AudioPlayer                  m_audio_player;
 };
 
 template <>

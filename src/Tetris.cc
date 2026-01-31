@@ -12,11 +12,15 @@ using namespace std::chrono_literals;
 Tetris::Tetris(Config const& config) noexcept
     : m_config(config),
       m_rng{static_cast<u32>(std::chrono::steady_clock::now().time_since_epoch().count()) ^ std::random_device{}()},
-      m_pieces(RandomTetronimo(), RandomTetronimo(), RandomTetronimo()),
-      m_active_tetronimo(RandomTetronimo()),
+      // m_pieces(RandomTetronimo(), RandomTetronimo(), RandomTetronimo()),
+      // m_active_tetronimo(RandomTetronimo()),
+      m_pieces(Tetronimo{.ty = Piece::Z, .rotation = 0, .pos = {0, 3}}, Tetronimo{.ty = Piece::Z, .rotation = 0, .pos = {0, 3}}, Tetronimo{.ty = Piece::T, .rotation = 0, .pos = {0, 3}}),
+      m_active_tetronimo(Tetronimo{.ty = Piece::I, .rotation = 0, .pos = {0, 3}}),
       m_game_state(GameState::Start),
       m_score(0),
-      m_level(0) {
+      m_level(0),
+      m_lines_cleared(0),
+      m_play_sound_effects(true) {
   m_timing.SetInterval(TIMER_DROP, 1000ms);
   m_timing.SetInterval(TIMER_LOCK, 500ms);
 }
@@ -144,6 +148,30 @@ void Tetris::DrawStartOverlay() noexcept {
                 .y = static_cast<float>(bounding_box.y + 0.25 * bounding_box.height),
             },
             font_size, 2.0F, FOREGROUND);
+
+  bounding_box = {
+      .x      = (grid_start.x + (overlay_rec.width - start_button_bounding_box_width) / 2),
+      .y      = grid_start.y + overlay_rec.height / 2 + dimensions.y * 3,
+      .width  = start_button_bounding_box_width,
+      .height = dimensions.y * 2,
+  };
+  DrawRectangleRoundedLinesEx(bounding_box, 0.1F, 0, 2, FOREGROUND);
+
+  if (m_play_sound_effects) {
+    WriteText("SOUND EFFECTS [ON]",
+              (Vector2){
+                  .x = static_cast<float>(bounding_box.x + 0.05 * bounding_box.width),
+                  .y = static_cast<float>(bounding_box.y + 0.25 * bounding_box.height),
+              },
+              font_size, 2.0F, FOREGROUND);
+  } else {
+    WriteText("SOUND EFFECTS [OFF]",
+              (Vector2){
+                  .x = static_cast<float>(bounding_box.x + 0.05 * bounding_box.width),
+                  .y = static_cast<float>(bounding_box.y + 0.25 * bounding_box.height),
+              },
+              font_size, 2.0F, FOREGROUND);
+  }
 }
 
 void Tetris::DrawPausedOverlay() noexcept {
@@ -221,6 +249,30 @@ void Tetris::DrawPausedOverlay() noexcept {
                 .y = static_cast<float>(bounding_box.y + 0.25 * bounding_box.height),
             },
             font_size, 2.0F, FOREGROUND);
+
+  bounding_box = {
+      .x      = (grid_start.x + (overlay_rec.width - start_button_bounding_box_width) / 2),
+      .y      = grid_start.y + overlay_rec.height / 2 + dimensions.y * 6,
+      .width  = start_button_bounding_box_width,
+      .height = dimensions.y * 2,
+  };
+  DrawRectangleRoundedLinesEx(bounding_box, 0.1F, 0, 2, FOREGROUND);
+
+  if (m_play_sound_effects) {
+    WriteText("SOUND EFFECTS [ON]",
+              (Vector2){
+                  .x = static_cast<float>(bounding_box.x + 0.05 * bounding_box.width),
+                  .y = static_cast<float>(bounding_box.y + 0.25 * bounding_box.height),
+              },
+              font_size, 2.0F, FOREGROUND);
+  } else {
+    WriteText("SOUND EFFECTS [OFF]",
+              (Vector2){
+                  .x = static_cast<float>(bounding_box.x + 0.05 * bounding_box.width),
+                  .y = static_cast<float>(bounding_box.y + 0.25 * bounding_box.height),
+              },
+              font_size, 2.0F, FOREGROUND);
+  }
 }
 
 void Tetris::DrawGameOverOverlay() noexcept {
@@ -362,6 +414,14 @@ constexpr void Tetris::WriteTetronimo() noexcept {
 
 void Tetris::Update() noexcept {
   m_timing.Update();
+  if (IsKeyDown(KEY_S) && m_timing.CanRepeatKey(KEY_S, 500ms)) {
+    m_play_sound_effects = !m_play_sound_effects;
+    if (!m_play_sound_effects) {
+      m_audio_player.Pause();
+    } else {
+      m_audio_player.Resume();
+    }
+  }
 
   switch (m_game_state) {
     case GameState::Start:
@@ -426,6 +486,8 @@ void Tetris::Run() noexcept {
   InitWindow(m_config.start_w, m_config.start_h, "MiniTetris");
 
   SetTargetFPS(60);
+
+  m_audio_player.LoopTrack();
 
   while (!WindowShouldClose()) {
     Update();

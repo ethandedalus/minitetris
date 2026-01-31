@@ -19,6 +19,7 @@ add_custom_target(copy_resources ALL
 
 # Dependencies
 include(cmake/fetch_raylib.cmake)
+include(cmake/fetch_portaudio.cmake)
 
 set(
     SRCS
@@ -26,13 +27,14 @@ set(
     src/Text.cc
     src/Tetris.cc
     src/Timing.cc
+    src/AudioPlayer.cc
 )
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 add_executable(${PROJECT_NAME} main.cc ${SRCS})
 
-target_link_libraries(${PROJECT_NAME} raylib)
+target_link_libraries(${PROJECT_NAME} raylib portaudio)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wno-c23-extensions)
 
 if (EMSCRIPTEN)
