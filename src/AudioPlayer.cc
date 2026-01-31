@@ -6,12 +6,16 @@ AudioPlayer::AudioPlayer() noexcept : m_stream(nullptr), m_state{nullptr, 0, 0} 
   Pa_Initialize();
 }
 
-void AudioPlayer::LoopTrack() noexcept {
+void AudioPlayer::SetPCMTrack(u8 const* data) noexcept {
   Stop();
-  m_state.samples       = reinterpret_cast<const f32*>(assets::MAIN_TRACK);
+
+  m_state.samples       = reinterpret_cast<const f32*>(data);
   m_state.total_frames  = sizeof(assets::MAIN_TRACK) / (sizeof(f32) * CHANNELS);
   m_state.current_frame = 0;
+}
 
+void AudioPlayer::LoopTrack() noexcept {
+  Stop();
   Pa_OpenDefaultStream(
       &m_stream, 0, CHANNELS, paFloat32,
       SAMPLE_RATE, 256, [](const void*, void* output, usize frame_count, const PaStreamCallbackTimeInfo*, PaStreamCallbackFlags, void* user_data) -> i32 {

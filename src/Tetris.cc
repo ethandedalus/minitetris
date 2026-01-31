@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #include "DesignSystem.h"
+#include "Resources.h"
 #include "Text.h"
 
 using namespace std::chrono_literals;
@@ -67,8 +68,8 @@ constexpr bool Tetris::CanShiftRight() const noexcept {
   return Fits({m_active_tetronimo.pos.x + 1, m_active_tetronimo.pos.y}, m_active_tetronimo.rotation);
 }
 
-constexpr bool Tetris::TryRotate() noexcept {
-  usize new_rotation = (m_active_tetronimo.rotation + 1) % 4;
+constexpr bool Tetris::TryRotate(RotationDirection direction) noexcept {
+  usize new_rotation = direction == CLOCKWISE ? (m_active_tetronimo.rotation + 1) % 4 : (m_active_tetronimo.rotation + 3) % 4;
 
   for (auto [dx, dy] : KICK_OFFSETS) {
     Position candidate = {m_active_tetronimo.pos.x + dx, m_active_tetronimo.pos.y + dy};
@@ -434,8 +435,10 @@ void Tetris::Update() noexcept {
         ShiftLeft();
       } else if (IsKeyDown(KEY_RIGHT) && m_timing.CanRepeatKey(KEY_RIGHT, 100ms) && CanShiftRight()) {
         ShiftRight();
-      } else if (IsKeyDown(KEY_UP) && m_timing.CanRepeatKey(KEY_UP, 250ms)) {
-        TryRotate();
+      } else if (IsKeyDown(KEY_UP) && m_timing.CanRepeatKey(KEY_UP, 150ms)) {
+        TryRotate(CLOCKWISE);
+      } else if (IsKeyDown(KEY_Z) && m_timing.CanRepeatKey(KEY_Z, 150ms)) {
+        TryRotate(COUNTERCLOCKWISE);
       } else if (IsKeyDown(KEY_P) && m_timing.CanRepeatKey(KEY_P, 300ms)) {
         m_game_state = GameState::Paused;
       }
@@ -487,6 +490,7 @@ void Tetris::Run() noexcept {
 
   SetTargetFPS(60);
 
+  m_audio_player.SetPCMTrack(assets::MAIN_TRACK);
   m_audio_player.LoopTrack();
 
   while (!WindowShouldClose()) {

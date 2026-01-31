@@ -35,6 +35,11 @@ private:
     TIMER_LOCK,
   };
 
+  enum RotationDirection {
+    CLOCKWISE,
+    COUNTERCLOCKWISE,
+  };
+
   constexpr static usize              ROWS         = 20;
   constexpr static usize              COLS         = 10;
   constexpr static Array<Position, 4> KICK_OFFSETS = {{
@@ -77,7 +82,7 @@ private:
   constexpr inline void ShiftLeft() noexcept { m_active_tetronimo.pos.x -= 1; }
   constexpr inline void ShiftRight() noexcept { m_active_tetronimo.pos.x += 1; }
   constexpr void        WriteTetronimo() noexcept;
-  constexpr bool        TryRotate() noexcept;
+  constexpr bool        TryRotate(RotationDirection direction) noexcept;
   constexpr void        Reset() noexcept;
   constexpr void        RemoveFilledRows() noexcept;
 

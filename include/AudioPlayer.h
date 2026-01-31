@@ -17,19 +17,16 @@ class AudioPlayer {
 public:
   AudioPlayer() noexcept;
 
+  void SetPCMTrack(u8 const* data) noexcept;
   void LoopTrack() noexcept;
-
   void Pause() noexcept;
-
   void Resume() noexcept;
-
   void Restart() noexcept;
+  void Stop() noexcept;
 
   inline bool IsPaused() const noexcept {
     return m_stream && !Pa_IsStreamActive(m_stream);
   }
-
-  void Stop() noexcept;
 
   inline bool IsPlaying() const noexcept {
     return m_stream && Pa_IsStreamActive(m_stream);
