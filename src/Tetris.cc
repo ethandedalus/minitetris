@@ -399,6 +399,47 @@ void Tetris::DrawGameOverOverlay() noexcept {
                 .y = overlay_rec.y + unit,
             },
             font_size, 2.0F, FOREGROUND);
+
+  f32 start_button_font_size = 50.0F;
+  dimensions                 = GetTextDimensions("PRESS R TO RESTART", font_size, 2.0F);
+
+  f32 start_button_bounding_box_width = overlay_rec.width * 0.4;
+  f32 max_start_button_text_width     = start_button_bounding_box_width - 2 * 0.05 * start_button_bounding_box_width;
+
+  while (dimensions.x > max_start_button_text_width) {
+    font_size -= 1;
+    dimensions = GetTextDimensions("PRESS R TO RESTART", font_size, 2.0F);
+  }
+
+  bounding_box = {
+      .x      = (grid_start.x + (overlay_rec.width - start_button_bounding_box_width) / 2),
+      .y      = grid_start.y + overlay_rec.height / 2,
+      .width  = start_button_bounding_box_width,
+      .height = dimensions.y * 2,
+  };
+  DrawRectangleRoundedLinesEx(bounding_box, 0.1F, 0, 2, FOREGROUND);
+
+  WriteText("PRESS R TO RESTART",
+            (Vector2){
+                .x = static_cast<float>(bounding_box.x + 0.05 * bounding_box.width),
+                .y = static_cast<float>(bounding_box.y + 0.25 * bounding_box.height),
+            },
+            font_size, 2.0F, FOREGROUND);
+
+  bounding_box = {
+      .x      = (grid_start.x + (overlay_rec.width - start_button_bounding_box_width) / 2),
+      .y      = static_cast<float>(grid_start.y + overlay_rec.height / 2 + dimensions.y * 2.5),
+      .width  = start_button_bounding_box_width,
+      .height = dimensions.y * 2,
+  };
+  DrawRectangleRoundedLinesEx(bounding_box, 0.1F, 0, 2, FOREGROUND);
+
+  WriteText(std::format("SCORE: {}", m_score).c_str(),
+            (Vector2){
+                .x = static_cast<float>(bounding_box.x + 0.05 * bounding_box.width),
+                .y = static_cast<float>(bounding_box.y + 0.25 * bounding_box.height),
+            },
+            font_size, 2.0F, FOREGROUND);
 }
 
 void Tetris::Draw() noexcept {
