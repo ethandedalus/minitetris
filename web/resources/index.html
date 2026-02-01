@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Tetris</title>
+    <style>
+canvas {
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+    </style>
+  </head>
+  <body>
+    <div>
+      <button onclick="Module.requestFullscreen(false, true);">
+        Full screen
+      </button>
+    </div>
+
+   <div
+      style="
+        width: 800px;
+        overflow: hidden;
+        display: flex;
+        place-items: center;
+        justify-content: center;
+        align-items: center;
+        height: 800px;"
+    >
+      <canvas
+        class="emscripten"
+        id="canvas"
+        oncontextmenu="event.preventDefault()"
+        tabindex="-1"
+        <!-- style = "min-width: 1000px;" -->
+        style="width: 800px; height: 800px"
+      ></canvas>
+    </div>
+    <script type="text/javascript">
+      var canvasElement = document.getElementById("canvas");
+
+      var Module = {
+        canvas: canvasElement,
+
+        onRuntimeInitialized: function () {
+          console.log("WASM module initialized");
+        },
+      };
+    </script>
+
+    <script async type="text/javascript" src="minitetris.js"></script>
+  </body>
+</html>
