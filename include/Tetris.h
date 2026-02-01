@@ -3,6 +3,7 @@
 #include <cassert>
 #include <format>
 #include <random>
+#include <unordered_map>
 
 #include "AudioPlayer.h"
 #include "RingBuffer.h"
@@ -16,6 +17,8 @@ enum class GameState {
   Paused,
   GameOver,
 };
+
+constexpr static inline u16 pack(u8 a, u8 b) { return (a << 8) | b; }
 
 class Tetris {
   friend struct std::formatter<Tetris>;
@@ -35,7 +38,7 @@ private:
     TIMER_LOCK,
   };
 
-  enum RotationDirection {
+  enum RotationDirection : u8 {
     CLOCKWISE,
     COUNTERCLOCKWISE,
   };
@@ -49,7 +52,38 @@ private:
       {0, -1},  // up (for floor kicks)
   }};
 
-  constexpr static Array<Position, 5> JLSTZ_KICK_OFFSETS = {{}};
+  enum KickTestName : u16 {
+    KT_0_R = pack(0, CLOCKWISE),
+    KT_R_0 = pack(1, COUNTERCLOCKWISE),
+    KT_R_2 = pack(1, CLOCKWISE),
+    KT_2_R = pack(2, COUNTERCLOCKWISE),
+    KT_2_L = pack(2, CLOCKWISE),
+    KT_L_2 = pack(3, COUNTERCLOCKWISE),
+    KT_L_0 = pack(3, CLOCKWISE),
+    KT_0_L = pack(0, COUNTERCLOCKWISE),
+  };
+
+  static inline const std::unordered_map<KickTestName, Array<Position, 5>> JLSTZ_KICK_OFFSETS = {
+      {KT_0_R, {{{0, 0}, {-1, 0}, {-1, +1}, {0, -2}, {-1, -2}}}},
+      {KT_R_0, {{{0, 0}, {+1, 0}, {+1, -1}, {0, +2}, {+1, +2}}}},
+      {KT_R_2, {{{0, 0}, {+1, 0}, {+1, -1}, {0, +2}, {+1, +2}}}},
+      {KT_2_R, {{{0, 0}, {-1, 0}, {-1, +1}, {0, -2}, {-1, -2}}}},
+      {KT_2_L, {{{0, 0}, {+1, 0}, {+1, +1}, {0, -2}, {+1, -2}}}},
+      {KT_L_2, {{{0, 0}, {-1, 0}, {-1, -1}, {0, +2}, {-1, +2}}}},
+      {KT_L_0, {{{0, 0}, {-1, 0}, {-1, -1}, {0, +2}, {-1, +2}}}},
+      {KT_0_L, {{{0, 0}, {+1, 0}, {+1, +1}, {0, -2}, {+1, -2}}}},
+  };
+
+  static inline const std::unordered_map<KickTestName, Array<Position, 5>> I_KICK_OFFSETS = {
+      {KT_0_R, {{{0, 0}, {-2, 0}, {+1, 0}, {-2, -1}, {+1, +2}}}},
+      {KT_R_0, {{{0, 0}, {+2, 0}, {-1, 0}, {+2, +1}, {-1, -2}}}},
+      {KT_R_2, {{{0, 0}, {-1, 0}, {+2, 0}, {-1, +2}, {+2, -1}}}},
+      {KT_2_R, {{{0, 0}, {+1, 0}, {-2, 0}, {+1, -2}, {-2, +1}}}},
+      {KT_2_L, {{{0, 0}, {+2, 0}, {-1, 0}, {+2, +1}, {-1, -2}}}},
+      {KT_L_2, {{{0, 0}, {-2, 0}, {+1, 0}, {-2, -1}, {+1, +2}}}},
+      {KT_L_0, {{{0, 0}, {+1, 0}, {-2, 0}, {+1, -2}, {-2, +1}}}},
+      {KT_0_L, {{{0, 0}, {-1, 0}, {+2, 0}, {-1, +2}, {+2, -1}}}},
+  };
 
   void Draw() noexcept;
 
@@ -77,6 +111,7 @@ private:
   constexpr bool        CanDrop() const noexcept;
   constexpr bool        CanShiftLeft() const noexcept;
   constexpr bool        CanShiftRight() const noexcept;
+  constexpr bool        CanRotate(RotationDirection direction) const noexcept;
   constexpr bool        Fits(Position const& pos, usize rotation) const noexcept;
   constexpr inline void Drop() noexcept { m_active_tetronimo.pos.y += 1; }
   constexpr inline void ShiftLeft() noexcept { m_active_tetronimo.pos.x -= 1; }

@@ -68,10 +68,101 @@ constexpr bool Tetris::CanShiftRight() const noexcept {
   return Fits({m_active_tetronimo.pos.x + 1, m_active_tetronimo.pos.y}, m_active_tetronimo.rotation);
 }
 
-constexpr bool Tetris::TryRotate(RotationDirection direction) noexcept {
+constexpr bool Tetris::CanRotate(RotationDirection direction) const noexcept {
+  if (m_active_tetronimo.ty == Piece::O) {
+    return false;
+  }
+
+  KickTestName test_name = static_cast<KickTestName>(pack(m_active_tetronimo.rotation, direction));
+
+  std::unordered_map<KickTestName, Array<Position, 5>> const& tests =
+      m_active_tetronimo.ty == Piece::I ? I_KICK_OFFSETS : JLSTZ_KICK_OFFSETS;
+
+  Array<Position, 5> cases = tests.at(KT_0_R);
+
+  switch (test_name) {
+    case KT_0_R:
+      cases = tests.at(KT_0_R);
+      break;
+    case KT_R_0:
+      cases = tests.at(KT_R_0);
+      break;
+    case KT_R_2:
+      cases = tests.at(KT_R_2);
+      break;
+    case KT_2_R:
+      cases = tests.at(KT_2_R);
+      break;
+    case KT_2_L:
+      cases = tests.at(KT_2_L);
+      break;
+    case KT_L_2:
+      cases = tests.at(KT_L_2);
+      break;
+    case KT_L_0:
+      cases = tests.at(KT_L_0);
+      break;
+    case KT_0_L:
+      cases = tests.at(KT_0_L);
+      break;
+  };
+
   usize new_rotation = direction == CLOCKWISE ? (m_active_tetronimo.rotation + 1) % 4 : (m_active_tetronimo.rotation + 3) % 4;
 
-  for (auto [dx, dy] : KICK_OFFSETS) {
+  for (auto [dx, dy] : cases) {
+    Position candidate = {m_active_tetronimo.pos.x + dx, m_active_tetronimo.pos.y + dy};
+    if (Fits(candidate, new_rotation)) {
+      // m_active_tetronimo.pos      = candidate;
+      // m_active_tetronimo.rotation = new_rotation;
+      return true;
+    }
+  }
+
+  return false;
+}
+
+constexpr bool Tetris::TryRotate(RotationDirection direction) noexcept {
+  if (m_active_tetronimo.ty == Piece::O) {
+    return false;
+  }
+
+  KickTestName test_name = static_cast<KickTestName>(pack(m_active_tetronimo.rotation, direction));
+
+  std::unordered_map<KickTestName, Array<Position, 5>> const& tests =
+      m_active_tetronimo.ty == Piece::I ? I_KICK_OFFSETS : JLSTZ_KICK_OFFSETS;
+
+  Array<Position, 5> cases = tests.at(KT_0_R);
+
+  switch (test_name) {
+    case KT_0_R:
+      cases = tests.at(KT_0_R);
+      break;
+    case KT_R_0:
+      cases = tests.at(KT_R_0);
+      break;
+    case KT_R_2:
+      cases = tests.at(KT_R_2);
+      break;
+    case KT_2_R:
+      cases = tests.at(KT_2_R);
+      break;
+    case KT_2_L:
+      cases = tests.at(KT_2_L);
+      break;
+    case KT_L_2:
+      cases = tests.at(KT_L_2);
+      break;
+    case KT_L_0:
+      cases = tests.at(KT_L_0);
+      break;
+    case KT_0_L:
+      cases = tests.at(KT_0_L);
+      break;
+  };
+
+  usize new_rotation = direction == CLOCKWISE ? (m_active_tetronimo.rotation + 1) % 4 : (m_active_tetronimo.rotation + 3) % 4;
+
+  for (auto [dx, dy] : cases) {
     Position candidate = {m_active_tetronimo.pos.x + dx, m_active_tetronimo.pos.y + dy};
     if (Fits(candidate, new_rotation)) {
       m_active_tetronimo.pos      = candidate;
@@ -453,7 +544,7 @@ void Tetris::Update() noexcept {
           m_locking = true;
           m_timing.Reset(TIMER_LOCK);
         }
-        if (m_timing.Tick(TIMER_LOCK) || (!CanShiftLeft() && !CanShiftRight())) {
+        if (m_timing.Tick(TIMER_LOCK) || (!CanShiftLeft() && !CanShiftRight() && !CanRotate(CLOCKWISE) && !CanRotate(COUNTERCLOCKWISE))) {
           WriteTetronimo();
           RemoveFilledRows();
           m_active_tetronimo = m_pieces.Cycle(RandomTetronimo());

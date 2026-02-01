@@ -84,7 +84,7 @@ constexpr Color PIECE_COLOR[] = {
 
 struct Tetronimo {
   Piece    ty;
-  usize    rotation;
+  u8       rotation;
   Position pos;
 };
 
