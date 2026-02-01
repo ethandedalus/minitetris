@@ -156,11 +156,14 @@ private:
   Config                       m_config;
   Timing                       m_timing;
   GameState                    m_game_state;
+  usize                        rows_cleared;
   usize                        m_score;
   usize                        m_level;
   usize                        m_lines_cleared;
   bool                         m_locking;
   bool                         m_play_sound_effects;
+  usize                        m_level_progress;
+  Timing::Duration             m_drop_speed;
   Music                        m_music;
   AudioPlayer                  m_audio_player;
 };

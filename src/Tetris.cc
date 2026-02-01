@@ -14,14 +14,14 @@ Tetris::Tetris(Config const& config) noexcept
       m_rng{static_cast<u32>(std::chrono::steady_clock::now().time_since_epoch().count()) ^ std::random_device{}()},
       m_pieces(RandomTetronimo(), RandomTetronimo(), RandomTetronimo()),
       m_active_tetronimo(RandomTetronimo()),
-      // m_pieces(Tetronimo{.ty = Piece::Z, .rotation = 0, .pos = {0, 3}}, Tetronimo{.ty = Piece::Z, .rotation = 0, .pos = {0, 3}}, Tetronimo{.ty = Piece::T, .rotation = 0, .pos = {0, 3}}),
-      // m_active_tetronimo(Tetronimo{.ty = Piece::I, .rotation = 0, .pos = {0, 3}}),
       m_game_state(GameState::Start),
       m_score(0),
-      m_level(0),
+      m_level(1),
+      m_drop_speed(1000ms),
+      m_level_progress(0),
       m_lines_cleared(0),
       m_play_sound_effects(true) {
-  m_timing.SetInterval(TIMER_DROP, 1000ms);
+  m_timing.SetInterval(TIMER_DROP, m_drop_speed);
   m_timing.SetInterval(TIMER_LOCK, 500ms);
 }
 
@@ -489,6 +489,39 @@ void Tetris::Draw() noexcept {
       DrawRectangleLinesEx(component_rec, 1.0F, OVERLAY);
     }
   }
+
+  // draw score/level box
+
+  Rectangle score_rec = {
+      .x      = grid_start.x + unit * (COLS + 1),
+      .y      = grid_start.y + unit * (COLS + 1),
+      .width  = unit * (COLS - 1),
+      .height = unit * (COLS - 1),
+  };
+
+  DrawRectangleLinesEx(score_rec, 2.0F, FOREGROUND);
+
+  f32 font_size = 200.0F;
+
+  Vector2 dimensions = GetTextDimensions("SCORE: ", font_size, 2.0F);
+  while (dimensions.x > score_rec.width * 0.5) {
+    font_size -= 1;
+    dimensions = GetTextDimensions("SCORE: ", font_size, 2.0F);
+  }
+
+  WriteText(std::format("LEVEL: {}", m_level).c_str(),
+            (Vector2){
+                .x = static_cast<float>(score_rec.x + 0.05 * score_rec.width),
+                .y = static_cast<float>(score_rec.y + 0.05 * score_rec.height),
+            },
+            font_size, 2.0F, FOREGROUND);
+
+  WriteText(std::format("SCORE: {}", m_score).c_str(),
+            (Vector2){
+                .x = static_cast<float>(score_rec.x + 0.05 * score_rec.width),
+                .y = static_cast<float>(score_rec.y + 0.05 * score_rec.height + 1.5 * dimensions.y),
+            },
+            font_size, 2.0F, FOREGROUND);
 }
 
 constexpr void Tetris::WriteTetronimo() noexcept {
@@ -639,6 +672,7 @@ constexpr void Tetris::Reset() noexcept {
 }
 
 constexpr void Tetris::RemoveFilledRows() noexcept {
+  usize cleared = 0;
   for (usize i = ROWS; i-- > 0;) {
     bool filled = std::all_of(
         m_grid.begin() + i * COLS,
@@ -646,6 +680,7 @@ constexpr void Tetris::RemoveFilledRows() noexcept {
         [](auto x) { return x != CELL_EMPTY; });
 
     if (filled) {
+      cleared += 1;
       for (usize j = i; j > 0; j--) {
         std::copy(
             m_grid.begin() + (j - 1) * COLS,
@@ -655,6 +690,34 @@ constexpr void Tetris::RemoveFilledRows() noexcept {
       std::fill(m_grid.begin(), m_grid.begin() + COLS, CELL_EMPTY);
 
       i++;
+    }
+  }
+  usize multiplier = 0;
+  switch (cleared) {
+    case 1:
+      multiplier = 100;
+      break;
+    case 2:
+      multiplier = 300;
+      break;
+    case 3:
+      multiplier = 500;
+      break;
+    case 4:
+      multiplier = 800;
+      break;
+  }
+
+  m_score += m_level * multiplier;
+  m_lines_cleared += cleared;
+
+  m_level_progress += cleared;
+  if (m_level_progress >= 10) {
+    m_level += 1;
+    m_level_progress = 0;
+    if (m_drop_speed > 100ms) {
+      m_drop_speed -= 50ms;
+      m_timing.SetInterval(TIMER_DROP, m_drop_speed);
     }
   }
 }
