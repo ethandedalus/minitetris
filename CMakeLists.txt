@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.29)
+cmake_minimum_required(VERSION 3.5)
 project(minitetris LANGUAGES C CXX OBJC)
 
 set(CMAKE_C_STANDARD 23)
@@ -19,7 +19,6 @@ add_custom_target(copy_resources ALL
 
 # Dependencies
 include(cmake/fetch_raylib.cmake)
-include(cmake/fetch_portaudio.cmake)
 
 set(
     SRCS
@@ -34,7 +33,7 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 
 add_executable(${PROJECT_NAME} main.cc ${SRCS})
 
-target_link_libraries(${PROJECT_NAME} raylib portaudio)
+target_link_libraries(${PROJECT_NAME} raylib)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wno-c23-extensions)
 
 if (EMSCRIPTEN)

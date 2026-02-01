@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include "AudioPlayer.h"
+#include "Resources.h"
 #include "RingBuffer.h"
 #include "Tetronimo.h"
 #include "Timing.h"
@@ -131,6 +132,23 @@ private:
 
   Tetronimo RandomTetronimo() noexcept;
 
+  static inline AudioData audio_data = {MAIN_TRACK, sizeof(MAIN_TRACK), 0};
+
+  static void AudioCallback(void* buffer, unsigned int frames) {
+    size_t bytes_needed = frames * 8;
+    u8*    out          = static_cast<u8*>(buffer);
+
+    while (bytes_needed > 0) {
+      size_t bytes_available = audio_data.size - audio_data.position;
+      size_t to_copy         = bytes_needed < bytes_available ? bytes_needed : bytes_available;
+      memcpy(out, audio_data.data + audio_data.position, to_copy);
+      out += to_copy;
+      audio_data.position += to_copy;
+      bytes_needed -= to_copy;
+      if (audio_data.position >= audio_data.size) audio_data.position = 0;
+    }
+  }
+
   std::mt19937                 m_rng;
   Array<CellType, ROWS * COLS> m_grid{};
   RingBuffer<Tetronimo, 3>     m_pieces;
@@ -143,6 +161,7 @@ private:
   usize                        m_lines_cleared;
   bool                         m_locking;
   bool                         m_play_sound_effects;
+  Music                        m_music;
   AudioPlayer                  m_audio_player;
 };
 

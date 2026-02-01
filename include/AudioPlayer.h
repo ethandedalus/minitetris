@@ -1,38 +1,37 @@
 #pragma once
 
-#include <portaudio.h>
-
 #include "Types.h"
+#include "raylib.h"
 
-constexpr static i32 SAMPLE_RATE = 44100;
-constexpr static i32 CHANNELS    = 2;
-
-struct PlaybackState {
-  const float* samples;
-  usize        total_frames;
-  usize        current_frame;
+struct AudioData {
+  const u8* data;
+  size_t    size;
+  size_t    position;
 };
 
 class AudioPlayer {
 public:
-  AudioPlayer() noexcept;
+  struct Config {
+    usize sample_rate;
+    usize sample_size;
+    usize channels;
+  };
 
-  void SetPCMTrack(u8 const* data) noexcept;
-  void LoopTrack() noexcept;
-  void Pause() noexcept;
-  void Resume() noexcept;
-  void Restart() noexcept;
-  void Stop() noexcept;
+  AudioPlayer(Config = {44100, 32, 2}) noexcept;
+  ~AudioPlayer() noexcept;
 
-  inline bool IsPaused() const noexcept {
-    return m_stream && !Pa_IsStreamActive(m_stream);
+  template <typename F>
+  void SetCallback(F&& f) noexcept {
+    SetAudioStreamCallback(m_stream, std::forward<F>(f));
   }
 
-  inline bool IsPlaying() const noexcept {
-    return m_stream && Pa_IsStreamActive(m_stream);
-  }
+  void        Open() noexcept;
+  void        Play() noexcept;
+  void        Pause() noexcept;
+  inline bool IsPaused() const noexcept { return m_paused; }
 
 private:
-  PaStream*     m_stream;
-  PlaybackState m_state;
+  AudioStream m_stream;
+  Config      m_config;
+  bool        m_paused;
 };

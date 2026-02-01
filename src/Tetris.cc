@@ -5,7 +5,6 @@
 #include <algorithm>
 
 #include "DesignSystem.h"
-#include "Resources.h"
 #include "Text.h"
 
 using namespace std::chrono_literals;
@@ -13,10 +12,10 @@ using namespace std::chrono_literals;
 Tetris::Tetris(Config const& config) noexcept
     : m_config(config),
       m_rng{static_cast<u32>(std::chrono::steady_clock::now().time_since_epoch().count()) ^ std::random_device{}()},
-      // m_pieces(RandomTetronimo(), RandomTetronimo(), RandomTetronimo()),
-      // m_active_tetronimo(RandomTetronimo()),
-      m_pieces(Tetronimo{.ty = Piece::Z, .rotation = 0, .pos = {0, 3}}, Tetronimo{.ty = Piece::Z, .rotation = 0, .pos = {0, 3}}, Tetronimo{.ty = Piece::T, .rotation = 0, .pos = {0, 3}}),
-      m_active_tetronimo(Tetronimo{.ty = Piece::I, .rotation = 0, .pos = {0, 3}}),
+      m_pieces(RandomTetronimo(), RandomTetronimo(), RandomTetronimo()),
+      m_active_tetronimo(RandomTetronimo()),
+      // m_pieces(Tetronimo{.ty = Piece::Z, .rotation = 0, .pos = {0, 3}}, Tetronimo{.ty = Piece::Z, .rotation = 0, .pos = {0, 3}}, Tetronimo{.ty = Piece::T, .rotation = 0, .pos = {0, 3}}),
+      // m_active_tetronimo(Tetronimo{.ty = Piece::I, .rotation = 0, .pos = {0, 3}}),
       m_game_state(GameState::Start),
       m_score(0),
       m_level(0),
@@ -507,11 +506,10 @@ constexpr void Tetris::WriteTetronimo() noexcept {
 void Tetris::Update() noexcept {
   m_timing.Update();
   if (IsKeyDown(KEY_S) && m_timing.CanRepeatKey(KEY_S, 500ms)) {
-    m_play_sound_effects = !m_play_sound_effects;
-    if (!m_play_sound_effects) {
-      m_audio_player.Pause();
+    if (m_audio_player.IsPaused()) {
+      m_audio_player.Play();
     } else {
-      m_audio_player.Resume();
+      m_audio_player.Pause();
     }
   }
 
@@ -579,10 +577,13 @@ void Tetris::Run() noexcept {
   SetConfigFlags(FLAG_WINDOW_RESIZABLE);
   InitWindow(m_config.start_w, m_config.start_h, "MiniTetris");
 
-  SetTargetFPS(60);
+  InitAudioDevice();
 
-  m_audio_player.SetPCMTrack(assets::MAIN_TRACK);
-  m_audio_player.LoopTrack();
+  m_audio_player.Open();
+  m_audio_player.SetCallback(AudioCallback);
+  m_audio_player.Play();
+
+  SetTargetFPS(60);
 
   while (!WindowShouldClose()) {
     Update();

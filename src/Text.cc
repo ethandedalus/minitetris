@@ -5,8 +5,8 @@
 Font& GetFont() noexcept {
   static Font font = LoadFontFromMemory(
       ".ttf",
-      assets::PIXELOID_MONO,
-      sizeof(assets::PIXELOID_MONO),
+      PIXELOID_MONO,
+      sizeof(PIXELOID_MONO),
       256,
       nullptr,
       0);
