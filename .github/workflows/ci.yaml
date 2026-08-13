@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "include/**"
+      - "resources/**"
+      - "cmake/**"
+      - "main.cc"
+      - "CMakeLists.txt"
+      - ".github/workflows/ci.yaml"
+  workflow_dispatch:
+
+jobs:
+  build-upload-web:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Set up Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: latest
+          actions-cache-folder: emsdk-cache
+
+      - name: Build Web target
+        run: |
+          emcmake cmake -DPLATFORM=Web -S . -B build-web
+          cmake --build build-web
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: "${{ secrets.SERVICE_ACCOUNT_JSON }}"
+
+      - name: Upload to GCS
+        uses: google-github-actions/upload-cloud-storage@v2
+        with:
+          path: build-web/minitetris.js
+          destination: anishsinha.io/ellimist
+          parent: false

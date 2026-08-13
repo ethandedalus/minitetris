@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 4.2.0)
-project(minitetris LANGUAGES C CXX OBJC)
+project(minitetris LANGUAGES C CXX)
+
+# Only the macOS build has any use for Objective-C. Enabling it unconditionally makes CMake probe for an
+# Objective-C compiler on Linux/Emscripten, where there isn't one.
+if (APPLE)
+    enable_language(OBJC)
+endif ()
 
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_CXX_STANDARD 23)
