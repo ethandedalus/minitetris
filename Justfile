@@ -1,20 +1,20 @@
-set dotenv-load
+set dotenv-load := true
 
 build:
-  cmake -S . -B build
+    cmake -S . -B build
 
 run:
-  cmake --build build --target run
+    cmake --build build --target run
 
 buildrun: build run
 
 build-web:
-  emcmake cmake -DPLATFORM=Web -S . -B build-web && cmake --build build-web --target web
+    emcmake cmake -DPLATFORM=Web -S . -B build-web && cmake --build build-web --target web
 
 build-web-server:
-  go build -C web -ldflags="-w -s" -o ../bin/minitetris . && ./bin/minitetris
+    go build -C web -ldflags="-w -s" -o ../bin/minitetris . && ./bin/minitetris
 
 run-web-server:
-  ./bin/minitetris
+    ./bin/minitetris
 
 buildrun-web: build-web build-web-server run-web-server

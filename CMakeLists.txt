@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 4.2.0)
 project(minitetris LANGUAGES C CXX OBJC)
 
 set(CMAKE_C_STANDARD 23)
@@ -12,10 +12,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(RESOURCES_DIR "${CMAKE_SOURCE_DIR}/resources")
 set(RESOURCES_OUTPUT_DIR "${CMAKE_BINARY_DIR}/resources")
 
-add_custom_target(copy_resources ALL
-    COMMAND ${CMAKE_COMMAND} -E copy_directory "${RESOURCES_DIR}" "${RESOURCES_OUTPUT_DIR}"
-    COMMENT "Copying resources to the build directory..."
-)
+add_custom_target(copy_resources ALL COMMAND ${CMAKE_COMMAND} -E copy_directory
+                  "${RESOURCES_DIR}" "${RESOURCES_OUTPUT_DIR}" COMMENT
+                  "Copying resources to the build directory...")
 
 # Dependencies
 include(cmake/fetch_raylib.cmake)
@@ -36,7 +35,16 @@ target_link_libraries(${PROJECT_NAME} raylib)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wno-c23-extensions)
 
 if (EMSCRIPTEN)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 -s ASYNCIFY -s GL_ENABLE_GET_PROC_ADDRESS=1 -s EXPORTED_RUNTIME_METHODS=['requestFullscreen','HEAPF32'] -s SINGLE_FILE=1 -s ALLOW_MEMORY_GROWTH=1")
+    set(CMAKE_EXE_LINKER_FLAGS
+        "${CMAKE_EXE_LINKER_FLAGS} \
+        -s USE_GLFW=3 \
+        -s ASSERTIONS=1 \
+        -s WASM=1 \
+        -s ASYNCIFY \
+        -s GL_ENABLE_GET_PROC_ADDRESS=1 \
+        -s EXPORTED_RUNTIME_METHODS=['requestFullscreen','HEAPF32'] \
+        -s SINGLE_FILE=1 \
+        -s ALLOW_MEMORY_GROWTH=1")
     set(CMAKE_EXECUTABLE_SUFFIX ".js")
 endif ()
 
@@ -76,8 +84,8 @@ add_custom_target(run
     COMMENT "Running app"
 )
 
-add_custom_target(web
-  COMMAND ${CMAKE_COMMAND} --build ${CMAKE_SOURCE_DIR}/build-web
-  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/build-web/${PROJECT_NAME}.js ${CMAKE_SOURCE_DIR}/web/resources/
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-)
+add_custom_target(web COMMAND ${CMAKE_COMMAND} --build
+                  ${CMAKE_SOURCE_DIR}/build-web COMMAND ${CMAKE_COMMAND} -E
+                  copy ${CMAKE_SOURCE_DIR}/build-web/${PROJECT_NAME}.js
+                  ${CMAKE_SOURCE_DIR}/web/resources/ WORKING_DIRECTORY
+                  ${CMAKE_SOURCE_DIR})
