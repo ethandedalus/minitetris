@@ -21,8 +21,7 @@ Tetris::Tetris(Config const& config) noexcept
       m_drop_speed(1000ms),
       m_level_progress(0),
       m_lines_cleared(0),
-      m_play_sound_effects(true),
-      m_track_paused(false),
+      m_play_sound_effects(false),
       m_main_track{} {
   m_timing.SetInterval(TIMER_DROP, m_drop_speed);
   m_timing.SetInterval(TIMER_LOCK, 500ms);
@@ -32,22 +31,21 @@ void Tetris::LoadTrack() noexcept {
   Wave wave    = LoadWaveFromMemory(".ogg", MAIN_TRACK, sizeof(MAIN_TRACK));
   m_main_track = LoadSoundFromWave(wave);
   UnloadWave(wave);
-  PlaySound(m_main_track);
 }
 
 void Tetris::UpdateTrack() noexcept {
-  if (!m_track_paused && !IsSoundPlaying(m_main_track)) {
+  if (m_play_sound_effects && !IsSoundPlaying(m_main_track)) {
     PlaySound(m_main_track);
   }
 }
 
 void Tetris::ToggleTrack() noexcept {
-  if (m_track_paused) {
+  m_play_sound_effects = !m_play_sound_effects;
+  if (m_play_sound_effects) {
     ResumeSound(m_main_track);
   } else {
     PauseSound(m_main_track);
   }
-  m_track_paused = !m_track_paused;
 }
 
 void Tetris::UnloadTrack() noexcept {

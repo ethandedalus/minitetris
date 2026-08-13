@@ -143,7 +143,6 @@ private:
   usize                        m_lines_cleared;
   bool                         m_locking;
   bool                         m_play_sound_effects;
-  bool                         m_track_paused;
   usize                        m_level_progress;
   Timing::Duration             m_drop_speed;
   Sound                        m_main_track;
