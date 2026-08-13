@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #include "DesignSystem.h"
+#include "Resources.h"
 #include "Text.h"
 
 using namespace std::chrono_literals;
@@ -20,9 +21,38 @@ Tetris::Tetris(Config const& config) noexcept
       m_drop_speed(1000ms),
       m_level_progress(0),
       m_lines_cleared(0),
-      m_play_sound_effects(true) {
+      m_play_sound_effects(true),
+      m_track_paused(false),
+      m_main_track{} {
   m_timing.SetInterval(TIMER_DROP, m_drop_speed);
   m_timing.SetInterval(TIMER_LOCK, 500ms);
+}
+
+void Tetris::LoadTrack() noexcept {
+  Wave wave    = LoadWaveFromMemory(".ogg", MAIN_TRACK, sizeof(MAIN_TRACK));
+  m_main_track = LoadSoundFromWave(wave);
+  UnloadWave(wave);
+  PlaySound(m_main_track);
+}
+
+void Tetris::UpdateTrack() noexcept {
+  if (!m_track_paused && !IsSoundPlaying(m_main_track)) {
+    PlaySound(m_main_track);
+  }
+}
+
+void Tetris::ToggleTrack() noexcept {
+  if (m_track_paused) {
+    ResumeSound(m_main_track);
+  } else {
+    PauseSound(m_main_track);
+  }
+  m_track_paused = !m_track_paused;
+}
+
+void Tetris::UnloadTrack() noexcept {
+  StopSound(m_main_track);
+  UnloadSound(m_main_track);
 }
 
 Tetronimo Tetris::RandomTetronimo() noexcept {
@@ -111,8 +141,6 @@ constexpr bool Tetris::CanRotate(RotationDirection direction) const noexcept {
   for (auto [dx, dy] : cases) {
     Position candidate = {m_active_tetronimo.pos.x + dx, m_active_tetronimo.pos.y + dy};
     if (Fits(candidate, new_rotation)) {
-      // m_active_tetronimo.pos      = candidate;
-      // m_active_tetronimo.rotation = new_rotation;
       return true;
     }
   }
@@ -460,10 +488,10 @@ void Tetris::Draw() noexcept {
     for (Position const& pos : cells) {
       auto      resolved_coords = static_cast<Vector2>(pos);
       Rectangle component_rec   = {
-            .x      = grid_start.x + resolved_coords.x * unit + x0 * unit,
-            .y      = grid_start.y + resolved_coords.y * unit + y0 * unit,
-            .width  = unit,
-            .height = unit,
+          .x      = grid_start.x + resolved_coords.x * unit + x0 * unit,
+          .y      = grid_start.y + resolved_coords.y * unit + y0 * unit,
+          .width  = unit,
+          .height = unit,
       };
 
       DrawRectangleRec(component_rec, PIECE_COLOR[static_cast<usize>(m_active_tetronimo.ty)]);
@@ -474,10 +502,10 @@ void Tetris::Draw() noexcept {
     if (m_grid[i] != CELL_EMPTY) {
       auto      resolved_coords = static_cast<Vector2>(Position{static_cast<i32>(i % COLS), static_cast<i32>(i / COLS)});
       Rectangle component_rec   = {
-            .x      = grid_start.x + resolved_coords.x * unit,
-            .y      = grid_start.y + resolved_coords.y * unit,
-            .width  = unit,
-            .height = unit,
+          .x      = grid_start.x + resolved_coords.x * unit,
+          .y      = grid_start.y + resolved_coords.y * unit,
+          .width  = unit,
+          .height = unit,
       };
 
       DrawRectangleRec(component_rec, PIECE_COLOR[m_grid[i] - 1]);
@@ -520,10 +548,10 @@ void Tetris::Draw() noexcept {
     for (Position const& pos : cells) {
       auto      resolved_coords = static_cast<Vector2>(pos);
       Rectangle component_rec   = {
-            .x      = start_x + resolved_coords.x * unit,
-            .y      = start_y + unit * (3 * i) + resolved_coords.y * unit,
-            .width  = unit,
-            .height = unit,
+          .x      = start_x + resolved_coords.x * unit,
+          .y      = start_y + unit * (3 * i) + resolved_coords.y * unit,
+          .width  = unit,
+          .height = unit,
       };
 
       DrawRectangleRec(component_rec, PIECE_COLOR[static_cast<usize>(t.ty)]);
@@ -579,12 +607,9 @@ constexpr void Tetris::WriteTetronimo() noexcept {
 
 void Tetris::Update() noexcept {
   m_timing.Update();
+  UpdateTrack();
   if (IsKeyDown(KEY_S) && m_timing.CanRepeatKey(KEY_S, 500ms)) {
-    if (m_audio_player.IsPaused()) {
-      m_audio_player.Play();
-    } else {
-      m_audio_player.Pause();
-    }
+    ToggleTrack();
   }
 
   switch (m_game_state) {
@@ -653,11 +678,9 @@ void Tetris::Run() noexcept {
 
   InitAudioDevice();
 
-  m_audio_player.Open();
-  m_audio_player.SetCallback(AudioCallback);
-  m_audio_player.Play();
-
   SetTargetFPS(60);
+
+  LoadTrack();
 
   while (!WindowShouldClose()) {
     Update();
@@ -681,6 +704,8 @@ void Tetris::Run() noexcept {
     EndDrawing();
   }
 
+  UnloadTrack();
+  CloseAudioDevice();
   CloseWindow();
 }
 

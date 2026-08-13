@@ -7,5 +7,5 @@ constexpr u8 PIXELOID_MONO[] = {
 };
 
 constexpr u8 MAIN_TRACK[] = {
-#embed "../resources/main-theme.pcm"
+#embed "../resources/main-theme.ogg"
 };

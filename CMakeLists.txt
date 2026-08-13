@@ -26,7 +26,6 @@ set(
     src/Text.cc
     src/Tetris.cc
     src/Timing.cc
-    src/AudioPlayer.cc
 )
 
 include_directories(${CMAKE_SOURCE_DIR}/include)

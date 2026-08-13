@@ -1,12 +1,12 @@
 #pragma once
 
+#include <raylib.h>
+
 #include <cassert>
 #include <format>
 #include <random>
 #include <unordered_map>
 
-#include "AudioPlayer.h"
-#include "Resources.h"
 #include "RingBuffer.h"
 #include "Tetronimo.h"
 #include "Timing.h"
@@ -44,14 +44,8 @@ private:
     COUNTERCLOCKWISE,
   };
 
-  constexpr static usize              ROWS         = 20;
-  constexpr static usize              COLS         = 10;
-  constexpr static Array<Position, 4> KICK_OFFSETS = {{
-      {0, 0},   // in place
-      {-1, 0},  // left
-      {1, 0},   // right
-      {0, -1},  // up (for floor kicks)
-  }};
+  constexpr static usize ROWS = 20;
+  constexpr static usize COLS = 10;
 
   enum KickTestName : u16 {
     KT_0_R = pack(0, CLOCKWISE),
@@ -121,6 +115,10 @@ private:
   constexpr bool        TryRotate(RotationDirection direction) noexcept;
   constexpr void        Reset() noexcept;
   constexpr void        RemoveFilledRows() noexcept;
+  void                  LoadTrack() noexcept;
+  void                  UpdateTrack() noexcept;
+  void                  ToggleTrack() noexcept;
+  void                  UnloadTrack() noexcept;
 
   inline i32 RandomInt(i32 min, i32 max) {
     return std::uniform_int_distribution<i32>{min, max}(m_rng);
@@ -131,23 +129,6 @@ private:
   }
 
   Tetronimo RandomTetronimo() noexcept;
-
-  static inline AudioData audio_data = {MAIN_TRACK, sizeof(MAIN_TRACK), 0};
-
-  static void AudioCallback(void* buffer, unsigned int frames) {
-    size_t bytes_needed = frames * 8;
-    u8*    out          = static_cast<u8*>(buffer);
-
-    while (bytes_needed > 0) {
-      size_t bytes_available = audio_data.size - audio_data.position;
-      size_t to_copy         = bytes_needed < bytes_available ? bytes_needed : bytes_available;
-      memcpy(out, audio_data.data + audio_data.position, to_copy);
-      out += to_copy;
-      audio_data.position += to_copy;
-      bytes_needed -= to_copy;
-      if (audio_data.position >= audio_data.size) audio_data.position = 0;
-    }
-  }
 
   std::mt19937                 m_rng;
   Array<CellType, ROWS * COLS> m_grid{};
@@ -162,10 +143,10 @@ private:
   usize                        m_lines_cleared;
   bool                         m_locking;
   bool                         m_play_sound_effects;
+  bool                         m_track_paused;
   usize                        m_level_progress;
   Timing::Duration             m_drop_speed;
-  Music                        m_music;
-  AudioPlayer                  m_audio_player;
+  Sound                        m_main_track;
 };
 
 template <>

@@ -35,28 +35,28 @@ struct std::formatter<CellType> : std::formatter<std::string_view> {
   auto format(CellType const& ct, TFormatContext& ctx) const {
     switch (ct) {
       case CELL_CYAN:
-        return std::format_to(ctx.out(), "{}", "\x1b[38;2;0;255;255m██\x1b[0m");
+        return std::format_to(ctx.out(), "\x1b[38;2;0;255;255m██\x1b[0m");
         break;
       case CELL_BLUE:
-        return std::format_to(ctx.out(), "{}", "\x1b[38;2;0;0;255m██\x1b[0m");
+        return std::format_to(ctx.out(), "\x1b[38;2;0;0;255m██\x1b[0m");
         break;
       case CELL_ORANGE:
-        return std::format_to(ctx.out(), "{}", "\x1b[38;2;255;165;0m██\x1b[0m");
+        return std::format_to(ctx.out(), "\x1b[38;2;255;165;0m██\x1b[0m");
         break;
       case CELL_YELLOW:
-        return std::format_to(ctx.out(), "{}", "\x1b[38;2;255;255;0m██\x1b[0m");
+        return std::format_to(ctx.out(), "\x1b[38;2;255;255;0m██\x1b[0m");
         break;
       case CELL_GREEN:
         return std::format_to(ctx.out(), "\x1b[38;2;0;255;0m██\x1b[0m");
         break;
       case CELL_RED:
-        return std::format_to(ctx.out(), "{}", "\x1b[38;2;255;0;0m██\x1b[0m");
+        return std::format_to(ctx.out(), "\x1b[38;2;255;0;0m██\x1b[0m");
         break;
       case CELL_MAGENTA:
-        return std::format_to(ctx.out(), "{}", "\x1b[38;2;255;0;255m██\x1b[0m");
+        return std::format_to(ctx.out(), "\x1b[38;2;255;0;255m██\x1b[0m");
         break;
       default:
-        return std::format_to(ctx.out(), "{}", "‧‧");
+        return std::format_to(ctx.out(), "‧‧");
         break;
     };
   }
