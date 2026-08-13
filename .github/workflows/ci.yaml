@@ -16,6 +16,7 @@ on:
 jobs:
   build-upload-web:
     runs-on: ubuntu-latest
+    environment: prod
 
     steps:
       - name: Checkout repository
