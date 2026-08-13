@@ -39,9 +39,10 @@ target_link_libraries(${PROJECT_NAME} raylib)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wno-c23-extensions)
 
 if (EMSCRIPTEN)
+    set_property(TARGET raylib PROPERTY INTERFACE_LINK_OPTIONS "-sUSE_GLFW=3")
+
     set(CMAKE_EXE_LINKER_FLAGS
         "${CMAKE_EXE_LINKER_FLAGS} \
-        -s USE_GLFW=3 \
         -s ASSERTIONS=1 \
         -s WASM=1 \
         -s ASYNCIFY \
