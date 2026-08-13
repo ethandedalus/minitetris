@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 4.2.0)
 project(minitetris LANGUAGES C CXX)
 
-# Only the macOS build has any use for Objective-C. Enabling it unconditionally makes CMake probe for an
-# Objective-C compiler on Linux/Emscripten, where there isn't one.
 if (APPLE)
     enable_language(OBJC)
 endif ()
@@ -41,6 +39,8 @@ target_link_libraries(${PROJECT_NAME} raylib)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wno-c23-extensions)
 
 if (EMSCRIPTEN)
+    set_property(TARGET raylib PROPERTY INTERFACE_LINK_OPTIONS "-sUSE_GLFW=3")
+
     set(CMAKE_EXE_LINKER_FLAGS
         "${CMAKE_EXE_LINKER_FLAGS} \
         -s USE_GLFW=3 \
@@ -48,7 +48,7 @@ if (EMSCRIPTEN)
         -s WASM=1 \
         -s ASYNCIFY \
         -s GL_ENABLE_GET_PROC_ADDRESS=1 \
-        -s EXPORTED_RUNTIME_METHODS=['requestFullscreen','HEAPF32'] \
+        -s EXPORTED_RUNTIME_METHODS=['ccall','requestFullscreen','HEAPF32'] \
         -s SINGLE_FILE=1 \
         -s ALLOW_MEMORY_GROWTH=1")
     set(CMAKE_EXECUTABLE_SUFFIX ".js")
